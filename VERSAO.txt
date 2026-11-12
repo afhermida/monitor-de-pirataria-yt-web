@@ -1,0 +1,4 @@
+Monitor de Audiolivros no YouTube
+Versão: 2.0.0-web
+Data do pacote: 12 de novembro de 2026
+Formato principal: aplicação web estática autocontida (um único HTML)

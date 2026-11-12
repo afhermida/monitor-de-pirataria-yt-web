@@ -1,0 +1,4 @@
+# Uma chave por linha. O arquivo aceita até 10 chaves.
+# Não salve chaves reais em pastas compartilhadas ou repositórios.
+SUA_CHAVE_1_AQUI
+SUA_CHAVE_2_AQUI

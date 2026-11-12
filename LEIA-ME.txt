@@ -1,0 +1,36 @@
+MONITOR DE AUDIOLIVROS NO YOUTUBE — VERSÃO WEB LOCAL
+=====================================================
+
+COMO ABRIR
+1. Salve o arquivo MONITOR_YOUTUBE_OFFLINE.html no computador.
+2. Dê dois cliques nele.
+3. O navegador abrirá a interface. Não é preciso instalar Python, usar terminal
+   ou iniciar servidor.
+
+COMO USAR
+1. Selecione sua planilha Excel (.xlsx), com colunas de título e autor.
+2. Cole de 1 a 10 chaves da YouTube Data API v3.
+3. Revise os critérios e, se necessário, informe canais autorizados.
+4. Clique em "Iniciar monitoramento".
+5. Ao terminar, clique em "Baixar relatório Excel".
+
+IMPORTANTE
+- A página é local, mas as buscas exigem internet para acessar a API do YouTube.
+- O catálogo, os resultados e as chaves não são enviados a um servidor desta
+  ferramenta. As consultas, incluindo título/autor e a chave ativa, são enviadas
+  diretamente pelo navegador à API oficial do Google/YouTube.
+- A ferramenta não baixa áudio nem vídeo.
+- O score é uma triagem. Todo resultado deve ser revisado por uma pessoa antes
+  de qualquer notificação ou pedido de remoção.
+- Chaves do mesmo projeto Google Cloud normalmente compartilham a mesma cota.
+- Caso a chave seja restrita por "referenciador HTTP", a execução como arquivo
+  local pode ser bloqueada. Consulte o README.md para alternativas seguras.
+
+ARQUIVOS DE APOIO
+- catalogo_exemplo.xlsx
+- chaves_api_exemplo.txt
+- canais_autorizados_exemplo.txt
+- termos_suspeitos_exemplo.txt
+- README.md (manual completo)
+
+Versão 2.0.0-web — 12 de novembro de 2026

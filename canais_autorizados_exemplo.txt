@@ -1,0 +1,6 @@
+# Prefira IDs de canal, pois nomes podem mudar ou se repetir.
+id:UCxxxxxxxxxxxxxxxxxxxxxx
+
+# Nomes também são aceitos.
+nome:Canal oficial da editora
+nome:Canal oficial do autor

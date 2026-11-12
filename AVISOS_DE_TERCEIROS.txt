@@ -1,0 +1,7 @@
+A aplicação incorpora JSZip para leitura e geração de arquivos XLSX no navegador.
+JSZip é distribuído sob licença MIT. A licença integral está em:
+codigo-fonte/vendor/JSZIP-LICENSE.txt
+
+O restante do código deste pacote foi preparado para o Monitor de Audiolivros no
+YouTube. Este arquivo não concede direitos sobre marcas, conteúdos do YouTube ou
+obras pesquisadas.
