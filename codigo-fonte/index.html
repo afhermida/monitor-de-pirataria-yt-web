@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Ferramenta local para monitoramento de possíveis audiolivros não autorizados no YouTube.">
+  <title>Monitor de Audiolivros no YouTube</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#top" aria-label="Ir ao início">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>Monitor de Audiolivros</strong>
+          <small>YouTube · execução local</small>
+        </span>
+      </a>
+      <div class="topbar-actions">
+        <span id="cacheAvailability" class="cache-status">Verificando cache…</span>
+        <span id="globalStatus" class="status-badge status-neutral">Carregando</span>
+      </div>
+    </div>
+  </header>
+
+  <main id="top" class="page-shell">
+    <section class="hero">
+      <div>
+        <span class="eyebrow">Proteção de catálogo</span>
+        <h1>Encontre possíveis audiolivros não autorizados sem usar o terminal.</h1>
+        <p>Carregue a planilha, informe suas chaves da API e acompanhe a busca. Catálogo, chaves, cache e resultados permanecem neste navegador; somente as consultas necessárias são enviadas à API oficial do YouTube.</p>
+      </div>
+      <aside class="privacy-card">
+        <span class="privacy-icon" aria-hidden="true">◈</span>
+        <div>
+          <strong>Privacidade por padrão</strong>
+          <p>As chaves ficam apenas na memória da página e nunca entram no relatório ou no checkpoint.</p>
+        </div>
+      </aside>
+    </section>
+
+    <nav class="workflow" aria-label="Etapas">
+      <div id="workflowCatalog" class="workflow-step">
+        <span>1</span><div><strong>Catálogo</strong><small>Planilha e colunas</small></div>
+      </div>
+      <div id="workflowKeys" class="workflow-step">
+        <span>2</span><div><strong>Chaves</strong><small>Até 10 chaves</small></div>
+      </div>
+      <div class="workflow-step">
+        <span>3</span><div><strong>Critérios</strong><small>Perfil e canais</small></div>
+      </div>
+      <div id="workflowRun" class="workflow-step">
+        <span>4</span><div><strong>Resultados</strong><small>Revisão e Excel</small></div>
+      </div>
+    </nav>
+
+    <section class="panel" aria-labelledby="catalogTitle">
+      <div class="panel-header">
+        <div>
+          <span class="section-number">01</span>
+          <h2 id="catalogTitle">Carregue o catálogo</h2>
+          <p>Formato aceito: Excel <code>.xlsx</code>, com uma coluna de título e outra de autor.</p>
+        </div>
+      </div>
+
+      <input id="catalogFile" class="visually-hidden" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+      <div id="dropZone" class="drop-zone" role="button" tabindex="0" aria-label="Selecionar ou arrastar planilha">
+        <div class="drop-icon" aria-hidden="true">⇧</div>
+        <strong id="dropZoneLabel">Arraste a planilha aqui</strong>
+        <span id="dropZoneHint">ou clique para selecionar um arquivo .xlsx</span>
+        <em>Todo o processamento da planilha acontece localmente.</em>
+      </div>
+
+      <div id="mappingPanel" class="mapping-panel" hidden>
+        <div class="subsection-heading">
+          <div>
+            <h3>Mapeamento da planilha</h3>
+            <p>A seleção automática pode ser ajustada antes da busca.</p>
+          </div>
+          <button id="applyMappingButton" type="button" class="button button-secondary">Aplicar seleção</button>
+        </div>
+        <div class="form-grid form-grid-four">
+          <label class="field">
+            <span>Aba</span>
+            <select id="sheetSelect"></select>
+          </label>
+          <label class="field">
+            <span>Linha do cabeçalho</span>
+            <input id="headerRowInput" type="number" min="1" max="20" value="1">
+          </label>
+          <label class="field">
+            <span>Coluna de título</span>
+            <select id="titleColumnSelect"></select>
+          </label>
+          <label class="field">
+            <span>Coluna de autor</span>
+            <select id="authorColumnSelect"></select>
+          </label>
+        </div>
+      </div>
+
+      <div id="catalogStatusPanel" class="catalog-status-panel" hidden>
+        <div class="catalog-stat">
+          <strong id="catalogCount">0</strong>
+          <span>títulos únicos</span>
+        </div>
+        <dl>
+          <div><dt>Arquivo</dt><dd id="catalogFileName">—</dd></div>
+          <div><dt>Aba</dt><dd id="catalogSheetName">—</dd></div>
+        </dl>
+      </div>
+
+      <div id="catalogPreview" class="table-card" hidden>
+        <div class="table-card-heading"><strong>Prévia do catálogo</strong><span>Primeiros 8 títulos</span></div>
+        <div class="table-scroll">
+          <table class="compact-table">
+            <thead><tr><th>#</th><th>Título</th><th>Autor</th></tr></thead>
+            <tbody id="catalogPreviewBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="apiKeysSection" class="panel" aria-labelledby="keysTitle">
+      <div class="panel-header panel-header-split">
+        <div>
+          <span class="section-number">02</span>
+          <h2 id="keysTitle">Adicione as chaves da API</h2>
+          <p>A ferramenta alterna automaticamente quando uma chave atinge cota, está inválida ou incompatível com a execução local.</p>
+        </div>
+        <div class="count-badge"><strong id="keysCount">0</strong><span>/ 10</span></div>
+      </div>
+
+      <div id="apiKeysList" class="keys-list"></div>
+      <div class="inline-actions">
+        <button id="addKeyButton" type="button" class="button button-secondary">+ Adicionar chave</button>
+        <button id="importKeysButton" type="button" class="button button-ghost">Importar TXT</button>
+        <input id="keysFile" class="visually-hidden" type="file" accept=".txt,text/plain">
+      </div>
+      <p id="budgetHint" class="help-text">Adicione pelo menos uma chave para pesquisar.</p>
+      <div class="notice notice-warning">
+        <strong>Cotas pertencem ao projeto.</strong>
+        <span>Chaves criadas no mesmo projeto do Google Cloud normalmente compartilham a mesma cota. Use somente credenciais legitimamente provisionadas para a organização.</span>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="criteriaTitle">
+      <div class="panel-header">
+        <div>
+          <span class="section-number">03</span>
+          <h2 id="criteriaTitle">Defina os critérios</h2>
+          <p>O perfil equilibrado reduz associações bibliográficas fracas e penaliza resumos.</p>
+        </div>
+      </div>
+
+      <div class="form-grid form-grid-three">
+        <label class="field">
+          <span>Perfil de classificação</span>
+          <select id="profile" class="analysis-setting configuration-control">
+            <option value="equilibrado">Equilibrado — recomendado</option>
+            <option value="planilha">Compatível com a planilha original</option>
+          </select>
+        </label>
+        <label class="field range-field">
+          <span>Score mínimo <output id="thresholdValue">0.50</output></span>
+          <input id="threshold" class="analysis-setting configuration-control" type="range" min="0" max="1" step="0.05" value="0.50">
+          <small>Resultados abaixo do limite ficam fora da lista de suspeitos.</small>
+        </label>
+        <label class="field">
+          <span>Duração longa a partir de</span>
+          <div class="input-suffix"><input id="longDuration" class="analysis-setting configuration-control" type="number" min="1" max="600" value="20"><span>min</span></div>
+        </label>
+      </div>
+
+      <label class="check-row">
+        <input id="includeSummaries" class="analysis-setting configuration-control" type="checkbox">
+        <span><strong>Não penalizar resumos e resenhas</strong><small>Útil quando esses formatos também fazem parte do escopo de revisão.</small></span>
+      </label>
+
+      <div class="divider"></div>
+      <div class="subsection-heading">
+        <div>
+          <h3>Canais autorizados</h3>
+          <p>Resultados desses canais são descartados antes da pontuação.</p>
+        </div>
+        <button id="authorizedFileButton" type="button" class="button button-ghost">Carregar TXT</button>
+        <input id="authorizedFile" class="visually-hidden" type="file" accept=".txt,text/plain">
+      </div>
+      <label class="field">
+        <span class="sr-only">Lista de canais autorizados</span>
+        <textarea id="authorizedChannels" class="configuration-control" rows="5" placeholder="# IDs são preferíveis&#10;id:UCxxxxxxxxxxxxxxxxxxxxxx&#10;nome:Companhia das Letras"></textarea>
+      </label>
+
+      <button id="advancedToggle" type="button" class="disclosure-button" aria-expanded="false" aria-controls="advancedPanel">
+        <span>Configurações avançadas</span><span aria-hidden="true">⌄</span>
+      </button>
+
+      <div id="advancedPanel" class="advanced-panel" hidden>
+        <div class="form-grid form-grid-four">
+          <label class="field">
+            <span>Resultados por título</span>
+            <input id="maxResults" class="configuration-control" type="number" min="1" max="50" value="15">
+          </label>
+          <label class="field">
+            <span>Região</span>
+            <input id="region" class="configuration-control" type="text" maxlength="2" value="BR">
+          </label>
+          <label class="field">
+            <span>Idioma de relevância</span>
+            <input id="language" class="configuration-control" type="text" maxlength="8" value="pt">
+          </label>
+          <label class="field">
+            <span>Publicado a partir de</span>
+            <input id="publishedAfter" class="configuration-control" type="date">
+          </label>
+          <label class="field">
+            <span>Limite local de buscas</span>
+            <input id="searchBudget" class="configuration-control" type="number" min="0" placeholder="Automático">
+            <small>0 remove apenas o limite local.</small>
+          </label>
+          <label class="field">
+            <span>Validade do cache</span>
+            <select id="cacheTtl" class="configuration-control">
+              <option value="1">1 dia</option>
+              <option value="7">7 dias</option>
+              <option value="30" selected>30 dias</option>
+              <option value="90">90 dias</option>
+              <option value="-1">Sem expiração</option>
+            </select>
+          </label>
+          <label class="check-card">
+            <input id="refreshCache" class="configuration-control" type="checkbox">
+            <span><strong>Atualizar cache</strong><small>Refaz buscas mesmo quando há entrada válida.</small></span>
+          </label>
+        </div>
+
+        <div class="subsection-heading subsection-spaced">
+          <div>
+            <h3>Termos adicionais de canal suspeito</h3>
+            <p>Um termo por linha; os termos padrão continuam ativos.</p>
+          </div>
+          <button id="termsFileButton" type="button" class="button button-ghost">Carregar TXT</button>
+          <input id="termsFile" class="visually-hidden" type="file" accept=".txt,text/plain">
+        </div>
+        <label class="field"><span class="sr-only">Termos suspeitos</span><textarea id="suspiciousTerms" class="configuration-control" rows="4" placeholder="acervo narrado&#10;biblioteca em áudio"></textarea></label>
+
+        <div class="cache-tools">
+          <div><strong>Checkpoint e cache</strong><span>Exporte um checkpoint para transportar ou preservar as buscas.</span></div>
+          <div class="inline-actions">
+            <button id="exportCheckpointButton" type="button" class="button button-ghost">Exportar checkpoint</button>
+            <button id="importCheckpointButton" type="button" class="button button-ghost">Importar checkpoint</button>
+            <button id="clearCacheButton" type="button" class="button button-danger-ghost">Apagar cache</button>
+            <input id="checkpointFile" class="visually-hidden" type="file" accept=".json,application/json">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel run-panel" aria-labelledby="runTitle">
+      <div class="panel-header panel-header-split">
+        <div>
+          <span class="section-number">04</span>
+          <h2 id="runTitle">Execute o monitoramento</h2>
+          <p>A busca pode ser pausada e retomada. Cada título concluído é salvo no cache local.</p>
+        </div>
+        <div class="run-actions">
+          <button id="resetButton" type="button" class="button button-ghost">Reiniciar</button>
+          <button id="startButton" type="button" class="button button-primary" disabled>Iniciar monitoramento</button>
+          <button id="pauseButton" type="button" class="button button-warning" hidden>Pausar</button>
+          <button id="resumeButton" type="button" class="button button-primary" hidden>Continuar</button>
+        </div>
+      </div>
+
+      <div class="progress-card">
+        <div class="progress-heading">
+          <div><span>Progresso</span><strong id="progressLabel">0 / 0</strong></div>
+          <p id="currentBook">Aguardando início</p>
+        </div>
+        <div class="progress-track" aria-label="Progresso da busca"><div id="progressBar" class="progress-bar"></div></div>
+        <div class="run-metrics">
+          <div><strong id="apiCallsCount">0</strong><span>buscas novas</span></div>
+          <div><strong id="cacheHitsCount">0</strong><span>do cache</span></div>
+          <div><strong id="pendingCount">0</strong><span>pendentes</span></div>
+          <div><strong id="rotationCount">0</strong><span>trocas de chave</span></div>
+        </div>
+      </div>
+
+      <div class="key-status-panel"><strong>Estado das chaves</strong><div id="keyStatusList"><span class="muted">Nenhuma chave ativa.</span></div></div>
+
+      <button id="logToggle" type="button" class="disclosure-button compact" aria-expanded="false" aria-controls="activityLogPanel">
+        <span>Ver atividade detalhada</span><span aria-hidden="true">⌄</span>
+      </button>
+      <div id="activityLogPanel" class="activity-log-panel" hidden><ol id="activityLog" class="activity-log"></ol></div>
+    </section>
+
+    <section class="results-section" aria-labelledby="resultsTitle">
+      <div class="results-heading">
+        <div>
+          <span class="eyebrow">Análise</span>
+          <h2 id="resultsTitle">Resultados</h2>
+        </div>
+        <button id="exportReportButton" type="button" class="button button-primary" disabled>Baixar relatório Excel</button>
+      </div>
+
+      <div class="summary-grid">
+        <article><span>Catálogo</span><strong id="summaryTotal">0</strong><small>títulos</small></article>
+        <article><span>Processados</span><strong id="summaryProcessed">0</strong><small>títulos</small></article>
+        <article class="summary-alert"><span>Com suspeita</span><strong id="summarySuspiciousTitles">0</strong><small>títulos</small></article>
+        <article class="summary-alert"><span>Vídeos suspeitos</span><strong id="summarySuspiciousVideos">0</strong><small>resultados</small></article>
+        <article class="summary-warning"><span>Pendentes</span><strong id="summaryPending">0</strong><small>títulos</small></article>
+      </div>
+
+      <div class="results-card">
+        <div class="results-toolbar">
+          <div class="result-tabs" role="tablist" aria-label="Tipo de resultado">
+            <button type="button" class="result-tab is-active" data-tab="videos">Vídeos suspeitos</button>
+            <button type="button" class="result-tab" data-tab="ranking">Ranking</button>
+            <button type="button" class="result-tab" data-tab="catalog">Catálogo completo</button>
+          </div>
+          <div class="result-filters">
+            <label><span class="sr-only">Buscar nos resultados</span><input id="resultsSearch" type="search" placeholder="Buscar título, autor ou canal"></label>
+            <label><span class="sr-only">Score mínimo</span><select id="minScoreFilter"><option value="0">Todos os scores</option><option value="0.5">Score ≥ 0,50</option><option value="0.75">Score ≥ 0,75</option><option value="0.9">Score ≥ 0,90</option></select></label>
+            <label><span class="sr-only">Ordenação</span><select id="sortResults"><option value="views">Mais visualizados</option><option value="score">Maior score</option><option value="book">Título do livro</option></select></label>
+          </div>
+        </div>
+        <div id="resultsEmpty" class="empty-state"><div aria-hidden="true">◎</div><strong>Carregue um catálogo para começar.</strong><span>Os resultados aparecerão aqui durante o monitoramento.</span></div>
+        <div id="resultsTableContainer" class="table-scroll"></div>
+        <div id="pagination" class="pagination" hidden>
+          <button id="prevPage" type="button" class="button button-ghost">← Anterior</button>
+          <span id="pageLabel">Página 1</span>
+          <button id="nextPage" type="button" class="button button-ghost">Próxima →</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="notice notice-info final-notice">
+      <strong>Triagem, não decisão automática.</strong>
+      <span>O score indica sinais para revisão humana. Confirme autoria, licença, territorialidade e autorização antes de qualquer notificação ou pedido de remoção.</span>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>Monitor de Audiolivros no YouTube <span id="appVersion"></span></span>
+    <span>Aplicação estática · sem servidor próprio · sem download de áudio ou vídeo</span>
+  </footer>
+
+  <script src="vendor/jszip.min.js"></script>
+  <script src="xlsx-lite.js"></script>
+  <script src="core.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
